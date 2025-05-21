@@ -1,5 +1,7 @@
 .App {
   text-align: center;
+  position: relative;
+  z-index: 0;
 }
 
 .App-logo {
@@ -35,4 +37,24 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* THEYLIVE */
+.background-text {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.background-word {
+  position: absolute;
+  font-size: 2rem;
+  color: rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+  user-select: none;
 }

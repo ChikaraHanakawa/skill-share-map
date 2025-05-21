@@ -17,6 +17,10 @@ const StudentList = ({ onEditStudent }) => {
   const [selectedSkill, setSelectedSkill] = useState('');
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [allSkills, setAllSkills] = useState([]);
+  
+  // スキル検索用の状態を追加
+  const [skillSearchList, setSkillSearchList] = useState([]);
+  const [skillToAdd, setSkillToAdd] = useState('');
 
   // 学生と利用可能なスキルを取得
   useEffect(() => {
@@ -49,11 +53,38 @@ const StudentList = ({ onEditStudent }) => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDepartment = filterDepartment === 'all' || student.department === filterDepartment;
     const matchesYear = filterYear === 'all' || student.year.toString() === filterYear;
-    return matchesSearch && matchesDepartment && matchesYear;
+    
+    // スキルでのAND検索
+    const matchesSkills = skillSearchList.length === 0 || 
+      skillSearchList.every(searchSkill => 
+        student.skills.some(studentSkill => studentSkill.name === searchSkill)
+      );
+    
+    return matchesSearch && matchesDepartment && matchesYear && matchesSkills;
   });
 
   // 学生を名前でソート
   filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
+
+  // スキル検索条件を追加
+  const handleAddSkillToSearch = () => {
+    if (!skillToAdd || skillSearchList.includes(skillToAdd)) return;
+    setSkillSearchList([...skillSearchList, skillToAdd]);
+    setSkillToAdd('');
+  };
+
+  // スキル検索条件を削除
+  const handleRemoveSkillFromSearch = (skillToRemove) => {
+    setSkillSearchList(skillSearchList.filter(skill => skill !== skillToRemove));
+  };
+
+  // 検索条件をリセット
+  const handleResetSearch = () => {
+    setSearchTerm('');
+    setFilterDepartment('all');
+    setFilterYear('all');
+    setSkillSearchList([]);
+  };
 
   // スキルを追加
   const handleAddSkillToStudent = () => {
@@ -123,7 +154,7 @@ const StudentList = ({ onEditStudent }) => {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div className="md:col-span-2">
             <label htmlFor="search-student" className="block text-sm font-medium text-gray-700 mb-1">
               学生を検索
@@ -179,6 +210,72 @@ const StudentList = ({ onEditStudent }) => {
             </select>
           </div>
         </div>
+
+        {/* スキル検索部分を追加 */}
+        <div className="border-t border-gray-200 pt-4 mt-4">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">スキル検索</h3>
+          <div className="flex flex-wrap items-end gap-3 mb-3">
+            <div className="w-full md:w-auto flex-grow md:max-w-xs">
+              <label htmlFor="skill-search" className="block text-sm font-medium text-gray-700 mb-1">
+                スキルを選択
+              </label>
+              <select
+                id="skill-search"
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                value={skillToAdd}
+                onChange={(e) => setSkillToAdd(e.target.value)}
+              >
+                <option value="">スキルを選択</option>
+                {allSkills.map(skill => (
+                  <option key={skill.name} value={skill.name}>
+                    {skill.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleAddSkillToSearch}
+              disabled={!skillToAdd}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              条件に追加
+            </button>
+            <button
+              onClick={handleResetSearch}
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              検索条件をリセット
+            </button>
+          </div>
+          
+          {skillSearchList.length > 0 && (
+            <div className="mb-3">
+              <div className="text-sm text-gray-600 mb-2">
+                {skillSearchList.length > 0 && 
+                  `以下のスキルをすべて持つ学生を検索中（AND検索）`
+                }
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {skillSearchList.map((skill, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center rounded-full px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-800"
+                  >
+                    <span>{skill}</span>
+                    <button
+                      onClick={() => handleRemoveSkillFromSearch(skill)}
+                      className="ml-1 text-indigo-500 hover:text-indigo-700"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -207,7 +304,9 @@ const StudentList = ({ onEditStudent }) => {
                       {student.skills.map((skill, index) => (
                         <div 
                           key={index} 
-                          className="flex items-center rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200"
+                          className={`flex items-center rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 ${
+                            skillSearchList.includes(skill.name) ? 'ring-2 ring-indigo-500' : ''
+                          }`}
                         >
                           <span>{skill.name}</span>
                           <span className={`ml-1 h-5 w-5 rounded-full flex items-center justify-center text-xs ${
